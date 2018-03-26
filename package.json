@@ -9,9 +9,14 @@
   "author": "mushirih",
   "license": "ISC",
   "dependencies": {
+    "algorithmia": "^0.3.10",
+    "bluebird": "^3.5.1",
     "botbuilder": "^3.14.0",
+    "imap": "^0.8.19",
+    "mailparser": "^2.2.0",
     "nodejs-nodemailer-outlook": "^1.0.8",
     "nodemailer": "^4.6.3",
-    "restify": "^6.3.4"
+    "restify": "^6.3.4",
+    "stream-parser": "^0.3.1"
   }
 }

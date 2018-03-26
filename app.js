@@ -124,6 +124,123 @@ bot.dialog('helpDialog', [
 			confirmPrompt:'This will interrupt your conversation,are you sure?'
 		});
 
+bot.dialog('outlookRead', [
+	
+		function(session){
+				
+				builder.Prompts.attachment(session,'Attach outlook object');
+				
+		},
+		function(session,results){
+		//read email object
+		var url=results.response[0].contentUrl;
+
+	var http = require('http');
+
+//
+var emailbody='';
+http.get(url, function(res) {
+    var data = [];
+
+    res.on('data', function(chunk) {
+        data.push(chunk);
+    }).on('end', function() {
+        //at this point data is an array of Buffers
+        //so Buffer.concat() can make us a new Buffer
+        //of all of them together
+        var buffer = Buffer.concat(data);
+        emailbody=readBuffer(buffer);
+    });
+    
+});
+//sentiment analysis ALGORITHIMIA
+var input = {
+  "document": emailbody
+};
+
+var Algorithmia=require('algorithmia');
+Algorithmia.client("simkW3Zwdt2gz7anbSf62wu7KzS1")
+    .algo("nlp/SentimentAnalysis/1.0.4")
+    .pipe(input)
+    .then(function(response) {
+        console.log('Email Sentiment score->: '+response.result[0].sentiment);
+    });
+}
+])		
+.triggerAction({
+			matches:/^outlook$/i,
+			confirmPrompt:'This will interrupt your conversation,are you sure?'
+		});
+
+function readBuffer(buffer){
+	
+  function formatEmail(data) {
+    return data.name ? data.name + " [" + data.email + "]" : data.email;
+  }
+
+  function parseHeaders(headers) {
+    var parsedHeaders = {};
+    if (!headers) {
+      return parsedHeaders;
+    }
+    var headerRegEx = /(.*)\: (.*)/g;
+    while (m = headerRegEx.exec(headers)) {
+      // todo: Pay attention! Header can be presented many times (e.g. Received). Handle it, if needed!
+      parsedHeaders[m[1]] = m[2];
+    }
+    return parsedHeaders;
+  }
+
+  function getMsgDate(rawHeaders) {
+    // Example for the Date header
+    var headers = parseHeaders(rawHeaders);
+    if (!headers['Date']){
+      return '-';
+    }
+    return new Date(headers['Date']);
+  }
+
+
+      const MSGReader= require ('./mail_reader/msg.reader.js');
+
+      //require '../msg.reader.js'
+
+          var msgReader = new MSGReader(buffer);
+         
+          var fileData = msgReader.getFileData();
+          console.log('fileData'+fileData);
+          if (!fileData.error) {
+            console.log('name: '+fileData.senderName );
+            console.log(' email: '+ fileData.senderEmail);
+            console.log(' sent to: '+ fileData.recipients);
+
+            // $('.msg-example .msg-to').html(jQuery.map(fileData.recipients, function (recipient, i) {
+            //   return formatEmail(recipient);
+            // }).join('<br/>'));
+           console.log('Email Date= '+getMsgDate(fileData.headers));
+            console.log('Email Subject= '+fileData.subject);
+            console.log('Email Body'+fileData.body);
+            console.log('attachments'+Object.keys(fileData.attachments));
+            // $('.msg-example .msg-attachment').html(jQuery.map(fileData.attachments, function (attachment, i) {
+            //   return attachment.fileName + ' [' + attachment.contentLength + 'bytes]' +
+            //       (attachment.pidContentId ? '; ID = ' + attachment.pidContentId : '');
+            // }).join('<br/>'));
+            // $('.msg-info').show();
+
+            // Use msgReader.getAttachment to access attachment content ...
+            // msgReader.getAttachment(0) or msgReader.getAttachment(fileData.attachments[0])
+          } else {
+           console.log('Parsed message has an error');
+          }
+        
+        
+     
+   return  fileData.body;
+}
+  
+
+
+
 function openOutlook(sendto,error){
 
 		var childProcess = require('child_process');
@@ -142,3 +259,32 @@ bot.library(require('./dialogs/reset-password'));
 bot.library(require('./validators'));
 
 server.post('/api/messages', connector.listen());
+
+//outlook read metadata handlers
+
+
+
+  function formatEmail(data) {
+    return data.name ? data.name + " [" + data.email + "]" : data.email;
+  }
+  function parseHeaders(headers) {
+    var parsedHeaders = {};
+    if (!headers) {
+      return parsedHeaders;
+    }
+    var headerRegEx = /(.*)\: (.*)/g;
+    while (m = headerRegEx.exec(headers)) {
+      // todo: Pay attention! Header can be presented many times (e.g. Received). Handle it, if needed!
+      parsedHeaders[m[1]] = m[2];
+    }
+    return parsedHeaders;
+  }
+  function getMsgDate(rawHeaders) {
+    // Example for the Date header
+    var headers = parseHeaders(rawHeaders);
+    if (!headers['Date']){
+      return '-';
+    }
+    return new Date(headers['Date']);
+  }
+
