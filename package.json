@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "algorithmia": "^0.3.10",
+    "apiai": "^4.0.3",
     "bluebird": "^3.5.1",
     "botbuilder": "^3.14.0",
     "imap": "^0.8.19",

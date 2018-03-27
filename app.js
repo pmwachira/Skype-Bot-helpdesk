@@ -93,7 +93,11 @@ bot.dialog('greatsoftDialog', [
             session.reset();
         }
     }
-]);
+])
+.triggerAction({
+			matches:/^GreatSoft$/i,
+			confirmPrompt:'This will interrupt your conversation,are you sure?'
+		});
 
 bot.dialog('colorcodeDialog', [
 	
@@ -136,6 +140,7 @@ bot.dialog('outlookRead', [
 		var url=results.response[0].contentUrl;
 
 	var http = require('http');
+	var fs=require('fs');
 
 //
 var emailbody='';
@@ -144,27 +149,56 @@ http.get(url, function(res) {
 
     res.on('data', function(chunk) {
         data.push(chunk);
+       // var file = fs.createWriteStream("file.msg");
     }).on('end', function() {
         //at this point data is an array of Buffers
         //so Buffer.concat() can make us a new Buffer
         //of all of them together
         var buffer = Buffer.concat(data);
         emailbody=readBuffer(buffer);
+        //file.close();
+        sentimentAnalysis(emailbody);
+        summarization(emailbody.replace(/\r?\n|\r/g, " ").trim());
+        
+       
     });
     
 });
-//sentiment analysis ALGORITHIMIA
-var input = {
-  "document": emailbody
-};
+
+function summarization(trimmed_emailbody){
+ //summarization by algorithmia
 
 var Algorithmia=require('algorithmia');
 Algorithmia.client("simkW3Zwdt2gz7anbSf62wu7KzS1")
+   .algo("nlp/Summarizer/0.1.7")
+    .pipe(trimmed_emailbody)
+    .then(function(response) {
+    //console.log('TRACK'+trimmed_emailbody);
+  	console.log('Email Summary ->: '+response.result);
+    });
+
+}
+
+
+
+function sentimentAnalysis(emailbody){
+ //sentiment analysis ALGORITHIMIA
+
+var input = {
+   "document": emailbody
+
+};
+
+var Algorithmia=require('algorithmia');
+ Algorithmia.client("simkW3Zwdt2gz7anbSf62wu7KzS1")
     .algo("nlp/SentimentAnalysis/1.0.4")
     .pipe(input)
     .then(function(response) {
-        console.log('Email Sentiment score->: '+response.result[0].sentiment);
+       console.log('Email Sentiment score->: '+response.result[0].sentiment);
+       // console.log('Email Sentiment score->: '+input.document);
     });
+
+}
 }
 ])		
 .triggerAction({
