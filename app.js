@@ -48,10 +48,13 @@ var bot = new builder.UniversalBot(connector, [
                 case 'ColorCode':
                 	session.beginDialog('colorcodeDialog',helpOptions[result.response.entity].Contact);
                     break;
+                default:
+                	extractTags(result.response);
                 	
             }
         } else {
-            session.send(`I am sorry but I didn't understand that. I need you to select one of the options below`);
+        	extractTags(result);
+            //session.send(`I am sorry but I didn't understand that. I need you to select one of the options below`);
         }
     },
     (session, result) => {
@@ -157,7 +160,7 @@ http.get(url, function(res) {
         var buffer = Buffer.concat(data);
         emailbody=readBuffer(buffer);
         //file.close();
-        sentimentAnalysis(emailbody);
+        //summarize email
         summarization(emailbody.replace(/\r?\n|\r/g, " ").trim());
         
        
@@ -167,21 +170,25 @@ http.get(url, function(res) {
 
 function summarization(trimmed_emailbody){
  //summarization by algorithmia
-
+var result='';
 var Algorithmia=require('algorithmia');
 Algorithmia.client("simkW3Zwdt2gz7anbSf62wu7KzS1")
-   .algo("nlp/Summarizer/0.1.7")
+   //.algo("nlp/Summarizer/0.1.7")
+   .algo("SummarAI/Summarizer/0.1.3")
     .pipe(trimmed_emailbody)
     .then(function(response) {
     //console.log('TRACK'+trimmed_emailbody);
-  	console.log('Email Summary ->: '+response.result);
+  	var keywords=response.result.auto_gen_ranked_keywords;
+  	//get sentiment
+  	sentimentAnalysis(emailbody,keywords,response.result.summarized_data);
+  	
     });
-
+return result;
 }
 
 
 
-function sentimentAnalysis(emailbody){
+function sentimentAnalysis(emailbody,keywords,summary){
  //sentiment analysis ALGORITHIMIA
 
 var input = {
@@ -189,16 +196,24 @@ var input = {
 
 };
 
+var result='';
 var Algorithmia=require('algorithmia');
  Algorithmia.client("simkW3Zwdt2gz7anbSf62wu7KzS1")
     .algo("nlp/SentimentAnalysis/1.0.4")
     .pipe(input)
     .then(function(response) {
        console.log('Email Sentiment score->: '+response.result[0].sentiment);
-       // console.log('Email Sentiment score->: '+input.document);
-    });
+       result=response.result[0].sentiment;
+       //respond to chat
+        builder.Prompts.text(session,'Here is an overview of the email');
+        builder.Prompts.text(session,'Summary: '+summary);
+          builder.Prompts.text(session,'Keywords: '+keywords);
+        builder.Prompts.text(session,'Sentiment Score: '+result);
 
+    });
+ return result;
 }
+
 }
 ])		
 .triggerAction({
